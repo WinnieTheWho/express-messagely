@@ -1,5 +1,5 @@
 /** User class for message.ly */
-
+const db = require("../db");
 
 
 /** User of the site. */
@@ -17,9 +17,11 @@ class User {
         password, 
         first_name, 
         last_name, 
-        phone
+        phone, 
+        join_at, 
+        last_login_at
       ) 
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
       RETURNING username, password, first_name, last_name, phone`, 
       [username, password, first_name, last_name, phone]);
 
