@@ -30,30 +30,58 @@ class User {
 
   static async authenticate(username, password) {
     try{
-    const result = await db.query(
-      "SELECT password FROM users WHERE username =$1", 
-      [username]);
-      let user = result.row[0];
+      const result = await db.query(
+        "SELECT password FROM users WHERE username =$1", 
+        [username]);
+        let user = result.row[0];
 
-    if (user) {
-      let isAuthorized = await (bcrypt.compare(password, user.password) === true);
-        return isAuthorized;
-      } else {
-        throw new ExpressError("Invalid username/password"); 
-      }
-    } catch(err) {
+      if (user) {
+        let isAuthorized = await (bcrypt.compare(password, user.password) === true);
+        return isAuthorized; 
+      }    
+    } 
+    catch(err) {
       return next(err);
     }
    }
 
   /** Update last_login_at for user */
 
-  static async updateLoginTimestamp(username) { }
+  static async updateLoginTimestamp(username) { 
+    const result = await db.query(
+      `UPDATE users
+        SET last_login_at = current_timestamp
+        WHERE username = $1
+        RETURNING username, last_login_at`, 
+        [username]);
+
+    if(!result.row[0]){
+      throw new ExpressError(`No such user: ${username}`, 404);
+    }
+
+    return result.rows[0];
+   }
 
   /** All: basic info on all users:
    * [{username, first_name, last_name, phone}, ...] */
 
-  static async all() { }
+  static async all() { 
+    const result = await db.query(
+      `SELECT username,
+              first_name, 
+              last_name,
+              phone
+      FROM users`
+    );
+    
+    if(!result.row[0]){
+      throw new ExpressError(`There are no users`, 404);
+    }
+
+    let users = result.rows;
+
+    return users;
+   }
 
   /** Get: get user by username
    *
@@ -64,7 +92,27 @@ class User {
    *          join_at,
    *          last_login_at } */
 
-  static async get(username) { }
+  static async get(username) {
+    const result = await db.query(
+      `SELECT username, 
+              first_name,
+              last_name, 
+              phone, 
+              join_at,
+              last_login_at
+      FROM users 
+      WHERE username = $1`,
+      [username]
+    );
+
+    let u = result.rows[0]
+    
+    if(!u){
+      throw new ExpressError(`No such user: ${username}`, 404);
+    }
+    
+   return res.json(u); 
+   }
 
   /** Return messages from this user.
    *
@@ -74,7 +122,45 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesFrom(username) { }
+  static async messagesFrom(username) {
+    const result = await db.query(
+      `SELECT m.id,
+              m.from_username,
+              f.first_name AS from_first_name,
+              f.last_name AS from_last_name,
+              f.phone AS from_phone,
+              m.to_username,
+              t.first_name AS to_first_name,
+              t.last_name AS to_last_name,
+              t.phone AS to_phone,
+              m.body,
+              m.sent_at,
+              m.read_at
+      FROM messages AS m
+          JOIN users AS f ON m.from_username = f.username
+          JOIN users AS t ON m.to_username = t.username
+      WHERE m.from_username = $1`,
+      [username]);
+      
+      let messages = result.rows
+
+      if(!messages) {
+        throw new ExpressError(`There are no messages from: ${username}`, 404)
+      }
+
+      return {
+        id: m.id,
+        to_user: {
+          username: m.to_username,
+          first_name: m.to_first_name,
+          last_name: m.to_last_name,
+          phone: m.to_phone,
+        },
+        body: m.body, 
+        sent_at: m.sent_at,
+        read_at: m.read_at,
+      }
+   }
 
   /** Return messages to this user.
    *
@@ -84,7 +170,45 @@ class User {
    *   {id, first_name, last_name, phone}
    */
 
-  static async messagesTo(username) { }
+  static async messagesTo(username) { 
+    const result = await db.query(
+      `SELECT m.id,
+              m.from_username,
+              f.first_name AS from_first_name,
+              f.last_name AS from_last_name,
+              f.phone AS from_phone,
+              m.to_username,
+              t.first_name AS to_first_name,
+              t.last_name AS to_last_name,
+              t.phone AS to_phone,
+              m.body,
+              m.sent_at,
+              m.read_at
+      FROM messages AS m
+          JOIN users AS f ON m.from_username = f.username
+          JOIN users AS t ON m.to_username = t.username
+      WHERE m.to_username = $1`,
+      [username]);
+      
+    let messages = result.rows
+
+    if(!messages) {
+      throw new ExpressError(`There are no messages from: ${username}`, 404)
+    }
+
+    return {
+      id: m.id,
+      from_user: {
+        username: m.from_username,
+        first_name: m.from_first_name,
+        last_name: m.from_last_name,
+        phone: m.from_phone,
+      },
+      body: m.body, 
+      sent_at: m.sent_at, 
+      read_at: m.read_at, 
+    };
+  }
 }
 
 
