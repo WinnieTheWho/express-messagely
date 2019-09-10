@@ -21,11 +21,14 @@ const router = express.Router();
  *
  **/
 
-router.get('/:id', ensureLoggedIn, ensureCorrectUser, async function(req, res, next) {
+router.get('/:id', ensureLoggedIn, async function(req, res, next) {
   try {
     const { id } = req.params;
     const message = await Message.get(id);
-    return res.json({ message });
+    if (message) {
+      console.log(message);
+      return res.json({ message });
+    }
   }
   catch(err) {
     return next(err);
@@ -39,7 +42,7 @@ router.get('/:id', ensureLoggedIn, ensureCorrectUser, async function(req, res, n
  *
  **/
 
-router.post('/', ensureLoggedIn, ensureCorrectUser, async function(req, res, next) {
+router.post('/', ensureLoggedIn, async function(req, res, next) {
   try {
     const { from_username, to_username, body } = req.body;
     const message = await Message.create({ from_username, to_username, body });
@@ -60,7 +63,7 @@ router.post('/', ensureLoggedIn, ensureCorrectUser, async function(req, res, nex
  **/
 
 
-router.post('/:id/read', ensureLoggedIn, ensureCorrectUser, async function(req, res, next) {
+router.post('/:id/read', ensureLoggedIn, async function(req, res, next) {
   try {
     const { id } = req.params;
     const message = await Message.markRead(id);
