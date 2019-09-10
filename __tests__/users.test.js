@@ -71,7 +71,7 @@ describe("Test User class", function () {
   });
 });
 
-describe("Test messages part of User class", async function () {
+describe("Test messages part of User class", function () {
   beforeEach(async function () {
     await db.query("DELETE FROM messages");
     await db.query("DELETE FROM users");
