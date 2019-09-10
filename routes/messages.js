@@ -1,3 +1,13 @@
+const express = require('express');
+const User = require('../models/user');
+const Message = require('../models/message');
+const { SECRET_KEY } = require("../config");
+const jwt = require("jsonwebtoken");
+
+const { ensureLoggedIn, ensureCorrectUser } = require('../middleware/auth');
+const router = express.Router();
+
+
 /** GET /:id - get detail of message.
  *
  * => {message: {id,
@@ -11,6 +21,16 @@
  *
  **/
 
+router.get('/:id', ensureLoggedIn, ensureCorrectUser, async function(req, res, next) {
+  try {
+    const { id } = req.params;
+    const message = await Message.get(id);
+    return res.json({ message });
+  }
+  catch(err) {
+    return next(err);
+  }
+})
 
 /** POST / - post message.
  *
@@ -18,6 +38,17 @@
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
  **/
+
+router.post('/', ensureLoggedIn, ensureCorrectUser, async function(req, res, next) {
+  try {
+    const { from_username, to_username, body } = req.body;
+    const message = await Message.create({ from_username, to_username, body });
+    return res.json({ message });
+  }
+  catch(err) {
+    return next(err);
+  }
+})
 
 
 /** POST/:id/read - mark message as read:
@@ -28,3 +59,18 @@
  *
  **/
 
+
+router.post('/:id/read', ensureLoggedIn, ensureCorrectUser, async function(req, res, next) {
+  try {
+    const { id } = req.params;
+    const message = await Message.markRead(id);
+
+    return res.json({ message });
+  }
+  catch(err) {
+    return next(err);
+  }
+});
+
+
+module.exports = router;

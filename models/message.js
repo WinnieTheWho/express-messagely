@@ -74,7 +74,7 @@ class Message {
     let m = result.rows[0];
 
     if (!m) {
-      throw new ExpressError(`No such message: ${id}`, 404);
+      throw new ExpressError(`Message ID ${id} is invalid`, 404);
     }
 
     return {
